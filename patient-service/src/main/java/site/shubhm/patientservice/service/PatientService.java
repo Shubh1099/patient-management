@@ -5,6 +5,7 @@ import site.shubhm.patientservice.dto.PatientRequestDTO;
 import site.shubhm.patientservice.dto.PatientResponseDTO;
 import site.shubhm.patientservice.exception.EmailAlreadyExistsException;
 import site.shubhm.patientservice.exception.PatientNotFoundException;
+import site.shubhm.patientservice.grpc.BillingServiceGrpcClient;
 import site.shubhm.patientservice.mapper.PatientMapper;
 import site.shubhm.patientservice.repository.PatientRepository;
 import site.shubhm.patientservice.model.Patient;
@@ -18,9 +19,11 @@ import java.util.UUID;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final BillingServiceGrpcClient billingServiceGrpcClient;
 
-    public PatientService(PatientRepository patientRepository) {
+    public PatientService(PatientRepository patientRepository, BillingServiceGrpcClient billingServiceGrpcClient) {
         this.patientRepository = patientRepository;
+        this.billingServiceGrpcClient = billingServiceGrpcClient;
     }
 
     public List<PatientResponseDTO> getPatients(){
@@ -37,6 +40,10 @@ public class PatientService {
                             + patientRequestDTO.getEmail());
         }
         Patient newPatient = patientRepository.save(PatientMapper.toModel(patientRequestDTO));
+
+        billingServiceGrpcClient.createBillingAccount(newPatient.getId().toString(),
+                newPatient.getName(), newPatient.getEmail());
+
         return PatientMapper.toDTO(newPatient);
     }
 
